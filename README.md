@@ -1,3 +1,1 @@
-# hello-world
-Hello world new project template.
-”# cocos -AIBehaviorTree“
+”# cocos 2 AIBehaviorTree mvvm“
