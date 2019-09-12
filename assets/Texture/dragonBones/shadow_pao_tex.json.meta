@@ -1,0 +1,7 @@
+{
+  "ver": "1.0.0",
+  "uuid": "41baeebc-2060-48a4-96f5-d75c10b326cf",
+  "atlasJson": "{\"width\":1024,\"imagePath\":\"shadow_pao_tex.png\",\"SubTexture\":[{\"width\":136,\"y\":238,\"height\":220,\"name\":\"image  (10)\",\"x\":142},{\"width\":114,\"y\":238,\"height\":192,\"name\":\"image  (5)\",\"x\":656},{\"width\":139,\"y\":238,\"height\":230,\"name\":\"image  (11)\",\"x\":1},{\"width\":72,\"y\":1,\"height\":120,\"name\":\"image  (1)\",\"x\":236},{\"width\":87,\"y\":1,\"height\":148,\"name\":\"image  (2)\",\"x\":147},{\"width\":104,\"y\":238,\"height\":177,\"name\":\"image  (3)\",\"x\":883},{\"width\":144,\"y\":1,\"height\":235,\"name\":\"image  (9)\",\"x\":1},{\"width\":109,\"y\":238,\"height\":185,\"name\":\"image  (4)\",\"x\":772},{\"width\":120,\"y\":238,\"height\":197,\"name\":\"image  (6)\",\"x\":534},{\"width\":129,\"y\":238,\"height\":212,\"name\":\"image  (8)\",\"x\":280},{\"width\":121,\"y\":238,\"height\":198,\"name\":\"image  (7)\",\"x\":411}],\"height\":512,\"name\":\"shadow_pao\"}",
+  "texture": "02db28c6-c1a7-4bd7-b707-bac1f418d0d5",
+  "subMetas": {}
+}
