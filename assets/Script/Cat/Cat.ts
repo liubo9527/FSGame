@@ -1,7 +1,8 @@
 import VMParent  from "../modelView/VMParent";
 import { BehaviorTerminalNode, BehaviorRunningStatus ,BehaviorNodePrecondition, BehaviorNode, BehaviorNodeFactory, BehaviorNodeSequence, BehaviorNodePreconditionNOT, BehaviorNodePreconditionTRUE
        } from "../aiBehaviorTree/BehaviorTree";
-
+import { PlayerData } from "./CatUserData";
+import { VM } from "../modelView/ViewModel";
 //import "../aiBehaviorTree/BehaviorTree.ts"
 // Learn TypeScript:
 //  - [Chinese] https://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -20,6 +21,8 @@ export default class Cat extends VMParent {
 
     data = {
         word:"喵...",
+        hp:99,
+        maxHp:100
     };
     private _animationName = null;
     set animationName(animationName: string){ if(this._animationName!=animationName){this._animationName = animationName,this.display.playAnimation(this._animationName, 0)}};
@@ -36,7 +39,9 @@ export default class Cat extends VMParent {
     private _face = 1;
     set face(face){this._face = face, this.display.node.scaleX = this._face};
     get face(){return this._face};
-
+    private _player:PlayerData = null;
+    set player(player:PlayerData){this._player = player};
+    get player(){return this._player};
     setSkinColor(color){
         this.display.node.color = color;
     }
@@ -45,15 +50,22 @@ export default class Cat extends VMParent {
     // LIFE-CYCLE CALLBACKS:
     display:dragonBones.ArmatureDisplay = null;
 
-    @property([dragonBones.ArmatureDisplay])
-    skill1Arry:dragonBones.ArmatureDisplay[] = [];
+    @property(dragonBones.ArmatureDisplay)
+    // LIFE-CYCLE CALLBACKS:
+    head:dragonBones.ArmatureDisplay = null;
 
-    // onLoad () {
-    //     super.onLoad();
-    // }
+    @property([cc.Node])
+    skill1Arry:cc.Node[] = [];
+
+    onLoad () {
+        super.onLoad();
+        this.player = new PlayerData();
+    }
 
     start () {
         var root = BehaviorNodeFactory.createPriorityBehaviorNode(null, "root");
+        var dead = BehaviorNodeFactory.createTerminalBehaviorNode(Cat_dead, root, "dead");
+        dead.behaviorNodePrecondition = new BehaviorNodePreconditionNOT(new CON_isAlive());
         var attack = BehaviorNodeFactory.createTerminalBehaviorNode(Cat_attack, root, "attack");
         attack.behaviorNodePrecondition = new CON_skillPrecondition();
         var priority = BehaviorNodeFactory.createPriorityBehaviorNode(root, "sequence");
@@ -72,6 +84,8 @@ export default class Cat extends VMParent {
         this.param.inputParameter.targetPos = new  cc.Vec2(0, 0);
         this.param.inputParameter.owner.moveSpeed = 1;
         this.param.inputParameter.timeStep = 1;
+
+        //this.changeHead();
     } 
 
     update (dt) {
@@ -82,8 +96,55 @@ export default class Cat extends VMParent {
 
     catSkill1(index){
         var skillDisPlay = this.skill1Arry[index]
-        skillDisPlay.node.x = this.face * (parseInt(index)+1) * 100;
-        skillDisPlay.playAnimation("pao", 1)
+        if(index < 3){
+            skillDisPlay.x = this.face * (parseInt(index)+1) * 100;
+            var skillScript = skillDisPlay.getComponent("NormalSkill");
+            skillScript.fire();
+        }else if(index == 3){
+            this.animationName = "uniqueSkill"
+        }else{
+
+        }
+    }
+    changeHead(){
+        let needChangeSlot = this.display.armature().getSlot("head");
+        let factory = dragonBones.CCFactory.getInstance();
+        let key = (this.head.getArmatureKey() as any);
+        factory.replaceSlotDisplay(
+            key,
+            "Armature",
+            "laowu",
+            "laowu",
+            needChangeSlot
+        )
+    }
+
+    onCollisionEnter(other, self){
+        var world = self.world;
+        var aabb = world.aabb;
+        var preAabb = world.preAabb;
+        var t = world.transform;
+        var r = world.radius;
+        var p = world.position;
+        if(self.tag == 1){
+            this.player.hp -= 10;
+            this.data.hp = this.player.hp;
+        }   
+    }
+    onCollisionStay(other, self){
+
+    }
+    onCollisionExit(other, self){
+
+    }
+
+    randMove(){
+        setInterval(()=>{
+            var posx = 500 - Math.random() * 1000;
+            var posy = 500 -Math.random() * 1000;
+            this.param.inputParameter.targetPos = new cc.Vec2(posx, posy);
+        }, 500000);
+        
     }
 }
 
@@ -126,7 +187,7 @@ class Cat_Parameter{
 class Cat_idle extends BehaviorTerminalNode{
     _doExecute(input:Cat_InputParameter):BehaviorRunningStatus{
         input.owner.animationName = "steady";
-        input.owner.data.word = "待机";
+        input.owner.data.word = "你来搞老子撒";
         return BehaviorRunningStatus.k_BRS_Finish;
     }
 }
@@ -196,19 +257,29 @@ class Cat_attack extends BehaviorTerminalNode{
     private _timecount = 40;//抬手动作时间
     _doExecute(input:Cat_InputParameter):BehaviorRunningStatus{
         this._timecount -= input.timeStep;
-        input.owner.animationName = "skillAttack1"
         if(this._timecount <= 0){
-            input.owner.data.word = "影压";
+            input.owner.data.word = "";
             let element = input.skillData.shift();
             input.owner.catSkill1(element)
             return BehaviorRunningStatus.k_BRS_Finish;
        }else{
-            input.owner.data.word = "影压抬手";
+            input.owner.data.word = "放技能";
+            let element = input.skillData[0];
+            if(element == 3){
+                input.owner.animationName = "uniqueAttack"
+            }else{
+                input.owner.animationName = "skillAttack1"
+            }
             return BehaviorRunningStatus.k_BRS_Executing;
        }
     }
-    _doExit(behaviorInputParam){
-        this._timecount = 40;
+    _doEnter(input:Cat_InputParameter){
+        var skillIndedx = input.skillData[0];
+        if(skillIndedx == 3){
+            this._timecount = 150;
+        }else{
+            this._timecount = 30;
+        }
     }
 }
 
@@ -218,6 +289,60 @@ class CON_skillPrecondition extends BehaviorNodePrecondition{
             return true;
         }else{
             return false;
+        }
+    }
+}
+
+class Cat_dead extends BehaviorTerminalNode{
+    private _timecount = 70;//dead动作时间
+    _doExecute(input:Cat_InputParameter):BehaviorRunningStatus{
+        this._timecount -= input.timeStep;
+        if(this._timecount <= 0){
+            //死亡
+            VM.setValue("laowu.count", VM.getValue("laowu.count") + 1);
+            input.owner.node.removeFromParent();
+            return BehaviorRunningStatus.k_BRS_Finish;
+        }else{
+            input.owner.animationName = "dead";
+            return BehaviorRunningStatus.k_BRS_Executing;
+        }
+    }
+}
+
+class CON_isAlive extends BehaviorNodePrecondition{
+    externalCondition(input:Cat_InputParameter):boolean{
+        if(input.owner && input.owner.player.hp > 0){
+            return true;
+        }else{
+            return false;
+        }
+    }
+}
+
+class Cat_normalHit extends BehaviorTerminalNode{
+    private _timecount = 70;//dead动作时间
+    _doExecute(input:Cat_InputParameter):BehaviorRunningStatus{
+        this._timecount -= input.timeStep;
+        if(this._timecount <= 0){
+            return BehaviorRunningStatus.k_BRS_Finish;
+        }else{
+            input.owner.animationName = "dead";
+            return BehaviorRunningStatus.k_BRS_Executing;
+        }
+    }
+}
+
+class CON_canHit extends BehaviorTerminalNode{
+    private _timecount = 70;//hit动作时间
+    _doExecute(input:Cat_InputParameter):BehaviorRunningStatus{
+        this._timecount -= input.timeStep;
+        if(this._timecount <= 0){
+            //死亡
+            input.owner.node.removeFromParent();
+            return BehaviorRunningStatus.k_BRS_Finish;
+        }else{
+            input.owner.animationName = "dead";
+            return BehaviorRunningStatus.k_BRS_Executing;
         }
     }
 }

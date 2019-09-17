@@ -1,0 +1,7 @@
+{
+  "ver": "1.0.0",
+  "uuid": "6a1c67b9-1ea2-47c2-9e8d-4e645140bbd0",
+  "atlasJson": "{\"SubTexture\":[{\"frameHeight\":59,\"y\":1,\"frameWidth\":50,\"frameX\":-2,\"width\":48,\"frameY\":0,\"height\":57,\"name\":\"laowu\",\"x\":1}],\"width\":64,\"imagePath\":\"head_tex.png\",\"name\":\"head\",\"height\":64}",
+  "texture": "a8770a4a-418d-4139-8076-d9ed71e5e714",
+  "subMetas": {}
+}

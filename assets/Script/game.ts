@@ -1,6 +1,9 @@
+
 import Cat from './Cat/Cat'
 import VirtualJoy from './VirtualJoy/VirtualJoy'
 import {GameConst} from './VirtualJoy/GameConst'
+import { VM } from './modelView/ViewModel';
+import { PlayerData } from './Cat/CatUserData';
 const {ccclass, property} = cc._decorator;
 
 @ccclass
@@ -17,21 +20,13 @@ export default class Game extends cc.Component {
         this.hero = cc.instantiate(this.prefabCat);
         this.hero.x = 0;
         this.hero.y = 0;
+        this.hero.scale = 1.4;
         this.node.addChild(this.hero);
+        VM.add(new PlayerData(), this.hero.uuid);
 
-        // this.node.on('touchend', (event:cc.Touch) => {
-        //     var pos = this.node.convertToNodeSpaceAR(event.getLocation());
-        //     var catScript:Cat = cat.getComponent("Cat");
-        //     catScript.param.inputParameter.targetPos = pos;
-        // });
-
-        var enemy = cc.instantiate(this.prefabCat);
-        enemy.x = 100;
-        enemy.y = 100;
-        var enemyScript:Cat = enemy.getComponent("Cat");
-        enemyScript.setSkinColor(new cc.Color(0,255,1,255));
-        this.node.addChild(enemy);
+       
         GameConst.touchNode = this.node;
+
         
         var virtualJoy = cc.instantiate(this.virtualJoy);
         var virtualJoyScript:VirtualJoy = virtualJoy.getComponent("VirtualJoy");
@@ -49,11 +44,34 @@ export default class Game extends cc.Component {
             this.angle = null;
         });
 
-        setInterval(()=>{
-            var posx = 500 - Math.random() * 1000;
-            var posy = 500 -Math.random() * 1000;
-            enemyScript.param.inputParameter.targetPos = new cc.Vec2(posx, posy);
-        }, 5000);
+        var manger = cc.director.getCollisionManager();
+        manger.enabled = true;
+        manger.enabledDebugDraw = true;
+        manger.enabledDrawBoundingBox = true;
+
+        // setInterval(()=>{
+        //     var enemy = cc.instantiate(this.prefabCat);
+        //     enemy.x = 100;
+        //     enemy.y = 100;
+        //     var enemyScript:Cat = enemy.getComponent("Cat");
+        //     enemyScript.setSkinColor(new cc.Color(0,255,1,255));
+        //     this.node.addChild(enemy);
+        //     enemyScript.changeHead();
+        //     enemy.scale = 1;
+        //     enemyScript.randMove();
+        // }, 5000);
+
+        var enemy = cc.instantiate(this.prefabCat);
+            enemy.x = 100;
+            enemy.y = 100;
+            var enemyScript:Cat = enemy.getComponent("Cat");
+            enemyScript.setSkinColor(new cc.Color(0,255,1,255));
+            this.node.addChild(enemy);
+            enemyScript.changeHead();
+            enemy.scale = 1;
+            enemyScript.randMove();
+
+            VM.add({count:"0"}, "laowu");
     }
 
     update(dt) {
