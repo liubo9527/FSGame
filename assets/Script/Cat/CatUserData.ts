@@ -5,6 +5,9 @@ export class PlayerData {
     hp:number = 100;
     maxMp:number = 200;
     mp:number = 200;
-    attack:number = 2;
     enemyS:any = [];
+    seeEnemyS:any = [];
+    moveSpeed = 1.5;
+    attack:number = 10;
+    skillDumage = 30;
 }

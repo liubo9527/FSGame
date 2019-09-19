@@ -27,9 +27,6 @@ export default class Cat extends VMParent {
     private _animationName = null;
     set animationName(animationName: string){ if(this._animationName!=animationName){this._animationName = animationName,this.display.playAnimation(this._animationName, 0)}};
     get animationName(){return this._animationName};
-    private _moveSpeed = null;
-    set moveSpeed(moveSpeed: number){this._moveSpeed = moveSpeed};
-    get moveSpeed(){return this._moveSpeed};
     private _behaviorRootNode = null;
     set behaviorRootNode (behaviorRootNode:BehaviorNode){this._behaviorRootNode = behaviorRootNode};
     get behaviorRootNode(){return this._behaviorRootNode};
@@ -40,8 +37,16 @@ export default class Cat extends VMParent {
     set face(face){this._face = face, this.display.node.scaleX = this._face};
     get face(){return this._face};
     private _player:PlayerData = null;
-    set player(player:PlayerData){this._player = player};
-    get player(){return this._player};
+    set player(player:PlayerData){
+        this._player = player
+        this.data.hp = this._player.hp;
+        this.data.maxHp = this._player.maxHp;
+    };
+    get player(){
+        this.data.hp = this._player.hp;
+        this.data.maxHp = this._player.maxHp;
+        return this._player
+    };
     setSkinColor(color){
         this.display.node.color = color;
     }
@@ -68,12 +73,24 @@ export default class Cat extends VMParent {
         dead.behaviorNodePrecondition = new BehaviorNodePreconditionNOT(new CON_isAlive());
         var attack = BehaviorNodeFactory.createTerminalBehaviorNode(Cat_attack, root, "attack");
         attack.behaviorNodePrecondition = new CON_skillPrecondition();
+
+
         var priority = BehaviorNodeFactory.createPriorityBehaviorNode(root, "sequence");
         priority.behaviorNodePrecondition = new BehaviorNodePreconditionNOT(new CON_hasReachTarget);
         var turnFace = BehaviorNodeFactory.createTerminalBehaviorNode(Cat_turnFace, priority, "turnFace");
         turnFace.behaviorNodePrecondition = new BehaviorNodePreconditionNOT(new CON_hsaSameDirection());
         var move = BehaviorNodeFactory.createTerminalBehaviorNode(Cat_move, priority,"move");
         move.behaviorNodePrecondition = new BehaviorNodePreconditionTRUE(); 
+
+        var pursue  = BehaviorNodeFactory.createTerminalBehaviorNode(Cat_PursueTarget, root, "pursue");
+        pursue.behaviorNodePrecondition = new CON_findTarget();
+
+        var hitPriority = BehaviorNodeFactory.createPriorityBehaviorNode(root, "sequence");
+        var turnFace = BehaviorNodeFactory.createTerminalBehaviorNode(Cat_turnFace, hitPriority, "turnFace");
+        turnFace.behaviorNodePrecondition = new CON_FaceToEnemy();
+        var hit = BehaviorNodeFactory.createTerminalBehaviorNode(Cat_normalHit, hitPriority, "hit");
+        hit.behaviorNodePrecondition = new CON_canHit();
+
         var idle = BehaviorNodeFactory.createTerminalBehaviorNode(Cat_idle, root, "idle");
         idle.behaviorNodePrecondition = new BehaviorNodePreconditionTRUE();
         this.behaviorRootNode = root;
@@ -81,8 +98,8 @@ export default class Cat extends VMParent {
         this.param = new Cat_Parameter();
         this.param.inputParameter = new Cat_InputParameter();
         this.param.inputParameter.owner = this;
-        this.param.inputParameter.targetPos = new  cc.Vec2(0, 0);
-        this.param.inputParameter.owner.moveSpeed = 1;
+        this.param.inputParameter.targetPos = new  cc.Vec2(this.node.x, this.node.y);
+        //this.param.inputParameter.owner.moveSpeed = 1;
         this.param.inputParameter.timeStep = 1;
 
         //this.changeHead();
@@ -126,25 +143,39 @@ export default class Cat extends VMParent {
         var t = world.transform;
         var r = world.radius;
         var p = world.position;
-        if(self.tag == 1){
-            this.player.hp -= 10;
-            this.data.hp = this.player.hp;
-        }   
+        if(self.tag == 1 && other.tag == 10){//技能
+            this.player.hp -= other.node.parent.getComponent("Cat").player.skillDumage;
+        }else if(self.tag == 0 && other.tag == 1){//敌人进入攻击范围
+            this.player.enemyS.push(other);
+            cc.js.array.remove(this.player.seeEnemyS, other);
+        }else if(self.tag == 0 && other.tag == 2){//发现敌人
+            this.player.seeEnemyS.push(other);
+        }
     }
     onCollisionStay(other, self){
 
     }
     onCollisionExit(other, self){
-
+        if(self.tag == 0 && other.tag == 1){//敌人死亡或者离开攻击范围
+            cc.js.array.remove(this.player.enemyS, other);
+        }else if(self.tag == 0 && other.tag == 2){//进入攻击范围或者敌人离开视线
+            cc.js.array.remove(this.player.seeEnemyS, other);
+        }
     }
 
     randMove(){
         setInterval(()=>{
-            var posx = 500 - Math.random() * 1000;
-            var posy = 500 -Math.random() * 1000;
+            var posx = Math.round(Math.random() * 960);
+            var posy = Math.round(Math.random() * 640);
             this.param.inputParameter.targetPos = new cc.Vec2(posx, posy);
-        }, 500000);
-        
+        }, 8000);
+    }
+
+    randomUseSkill(){
+        setInterval(()=>{
+            var skillID = Math.round(Math.random()*2);
+            this.param.inputParameter.skillData.push(skillID);
+        }, 2000);
     }
 }
 
@@ -199,9 +230,9 @@ class Cat_move extends BehaviorTerminalNode{
         var currentPos = new cc.Vec2(input.owner.node.x, input.owner.node.y);
         var subPos = targetPos.sub(currentPos);
         var unitVec2 = subPos.normalize();
-        input.owner.node.x += unitVec2.x * input.owner.moveSpeed;
-        input.owner.node.y += unitVec2.y * input.owner.moveSpeed;
-        if(subPos.mag() < input.owner.moveSpeed){
+        input.owner.node.x += unitVec2.x * input.owner.player.moveSpeed;
+        input.owner.node.y += unitVec2.y * input.owner.player.moveSpeed;
+        if(subPos.mag() < input.owner.player.moveSpeed){
             input.owner.data.word = "移动完毕";
             return BehaviorRunningStatus.k_BRS_Finish;
         }else{
@@ -215,7 +246,7 @@ class CON_hasReachTarget extends BehaviorNodePrecondition{
     externalCondition(input:Cat_InputParameter):boolean{
         var targetPos = input.targetPos;
         var currentPos = new cc.Vec2(input.owner.node.x, input.owner.node.y);
-        if(currentPos.sub(targetPos).mag() < input.owner.moveSpeed){
+        if(currentPos.sub(targetPos).mag() < input.owner.player.moveSpeed){
             return true;
         }else{
             return false;
@@ -247,6 +278,22 @@ class CON_hsaSameDirection extends BehaviorNodePrecondition{
         var sub = input.targetPos.x - input.owner.node.x;
         if(sub * input.owner.face> 0){
             return true;
+        }else{ 
+            return false;
+        }
+    }
+}
+
+class CON_FaceToEnemy extends BehaviorNodePrecondition{
+    externalCondition(input:Cat_InputParameter):boolean{
+        if(input.owner.player.enemyS[0]){
+            var enemyPos = input.owner.player.enemyS[0].node.position;
+            var sub = enemyPos.x - input.owner.node.x;
+            if(sub * input.owner.face> 0){
+                return false;
+            }else{
+                return true;
+            }
         }else{
             return false;
         }
@@ -299,7 +346,7 @@ class Cat_dead extends BehaviorTerminalNode{
         this._timecount -= input.timeStep;
         if(this._timecount <= 0){
             //死亡
-            VM.setValue("laowu.count", VM.getValue("laowu.count") + 1);
+            VM.setValue("laowu.count", parseInt(VM.getValue("laowu.count")) + 1);
             input.owner.node.removeFromParent();
             return BehaviorRunningStatus.k_BRS_Finish;
         }else{
@@ -324,25 +371,54 @@ class Cat_normalHit extends BehaviorTerminalNode{
     _doExecute(input:Cat_InputParameter):BehaviorRunningStatus{
         this._timecount -= input.timeStep;
         if(this._timecount <= 0){
+            if(input.owner.player.enemyS[0]){
+                var enemy = input.owner.player.enemyS[0].node.getComponent("Cat");
+                enemy.player.hp -= input.owner.player.attack;
+            }
             return BehaviorRunningStatus.k_BRS_Finish;
         }else{
-            input.owner.animationName = "dead";
+            input.owner.animationName = "normalAttack";
             return BehaviorRunningStatus.k_BRS_Executing;
         }
     }
+    _doEnter(behaviorInputParam){
+        this._timecount = 70;
+    }
 }
 
-class CON_canHit extends BehaviorTerminalNode{
-    private _timecount = 70;//hit动作时间
-    _doExecute(input:Cat_InputParameter):BehaviorRunningStatus{
-        this._timecount -= input.timeStep;
-        if(this._timecount <= 0){
-            //死亡
-            input.owner.node.removeFromParent();
-            return BehaviorRunningStatus.k_BRS_Finish;
+class CON_canHit extends BehaviorNodePrecondition{
+    externalCondition(input:Cat_InputParameter):boolean{
+        if(input.owner.player.enemyS.length > 0){
+            return true;
         }else{
-            input.owner.animationName = "dead";
-            return BehaviorRunningStatus.k_BRS_Executing;
+            return false;
         }
+        
+    }
+}
+
+class Cat_PursueTarget extends BehaviorTerminalNode{
+    //private _timecount = 10;//dead动作时间
+    _doExecute(input:Cat_InputParameter):BehaviorRunningStatus{
+        var targetPos = input.owner.player.seeEnemyS[0].node.position;
+        var currentPos = input.owner.node.position;
+        var angle = targetPos.sub(currentPos).normalize();
+        var pos = new cc.Vec2(10 * angle.x, 10 * angle.y).add(new cc.Vec2(currentPos.x, currentPos.y));
+        input.targetPos = pos;
+        return BehaviorRunningStatus.k_BRS_Finish;
+    }
+    _doEnter(behaviorInputParam){
+
+    }
+}
+
+class CON_findTarget extends BehaviorNodePrecondition{
+    externalCondition(input:Cat_InputParameter):boolean{
+        if(input.owner.player.seeEnemyS.length > 0 && input.owner.player.enemyS.length == 0){
+            return true;
+        }else{
+            return false;
+        }
+        
     }
 }

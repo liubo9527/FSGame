@@ -50,10 +50,13 @@
       },
       {
         "__id__": 41
+      },
+      {
+        "__id__": 42
       }
     ],
     "_prefab": {
-      "__id__": 42
+      "__id__": 43
     },
     "_opacity": 255,
     "_color": {
@@ -705,7 +708,7 @@
       "__id__": 17
     },
     "_enabled": true,
-    "tag": 0,
+    "tag": 10,
     "_offset": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -738,7 +741,7 @@
   {
     "__type__": "cc.Node",
     "_name": "skill2",
-    "_objFlags": 0,
+    "_objFlags": 512,
     "_parent": {
       "__id__": 1
     },
@@ -849,7 +852,7 @@
       "__id__": 22
     },
     "_enabled": true,
-    "tag": 0,
+    "tag": 10,
     "_offset": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -993,7 +996,7 @@
       "__id__": 27
     },
     "_enabled": true,
-    "tag": 0,
+    "tag": 10,
     "_offset": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -1137,7 +1140,7 @@
   {
     "__type__": "cc.Node",
     "_name": "speekLabel",
-    "_objFlags": 0,
+    "_objFlags": 512,
     "_parent": {
       "__id__": 1
     },
@@ -1295,7 +1298,7 @@
       "x": 0,
       "y": 40
     },
-    "_radius": 110,
+    "_radius": 80,
     "_id": ""
   },
   {
@@ -1313,6 +1316,23 @@
       "y": 40
     },
     "_radius": 40,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CircleCollider",
+    "_name": "",
+    "_objFlags": 0,
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "tag": 2,
+    "_offset": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 40
+    },
+    "_radius": 200,
     "_id": ""
   },
   {
